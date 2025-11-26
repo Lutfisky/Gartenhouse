@@ -16,6 +16,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "csv-load-sync": "^2.3.1",
+    "csv-parse": "^6.1.0",
     "dayjs": "^1.11.18",
     "express": "^4.21.2",
     "helmet": "^7.0.0",
