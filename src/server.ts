@@ -23,6 +23,9 @@ class GreenhouseServer {
     this.wsPort = parseInt(process.env.WS_PORT || '3001');
     
     this.app = express();
+    // wenn wir JSON benutzen wollen:
+    this.app.use(express.json());
+
     this.greenhouseManager = new GreenhouseManager();
     this.greenhouseManager.initializeManager();
     
