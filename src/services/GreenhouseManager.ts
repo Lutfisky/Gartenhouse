@@ -64,6 +64,8 @@ export class GreenhouseManager {
     console.log('🌱 Initialized 4 greenhouses with 8 tables each');
   }
 
+  //test
+
   private startSimulation(): void {
     console.log('🔄 Start der Gewächshaus Simulation...');
 
