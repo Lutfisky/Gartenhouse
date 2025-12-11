@@ -1,4 +1,3 @@
-
 // ===========================
 // src/services/SensorSimulator.ts
 // ===========================
@@ -6,15 +5,9 @@
 import { PlantTable, EnvironmentData, GreenhouseData } from '../types/greenhouse.types';
 
 export class SensorSimulator {
-
-  private logging: boolean = true;
   private environmentData: EnvironmentData[] = [];
-  private currentDay = 100;
+  private currentDay = 0;
   private minuteOfTheDay: number = 0;
-
-
-  constructor() {
-  }
 
   public getCurrentDay(): number {
     return this.currentDay;
@@ -26,75 +19,91 @@ export class SensorSimulator {
   }
 
   public async simulateAllGreenhouses(greenhouses: Map<number, GreenhouseData>) {
+    const env = this.environmentData[this.currentDay % this.environmentData.length];
 
-    // Update Greenhouse data
-    greenhouses.forEach((greenhouse) => {
+    greenhouses.forEach((house) => {
+      // 🌞 Licht und Temperatur
+      house.lightIntensity = (env?.tsun ?? 500) * (1 - house.shading / 100);
+      house.temperature += (house.lightIntensity / 500) * 3;
 
-      greenhouse.tables.forEach(table => {
-        this.updateTableData(table, greenhouse);
-      });
+      // 🌬️ Lüftung
+      if (house.fan && this.minuteOfTheDay % 30 === 0) {
+        house.temperature = env.tavg;
+        house.humidity = Math.min(85, env.pres); // vereinfachte Luftfeuchte
+      }
+
+      // Luftfeuchte Limit
+      if (house.humidity > 85) house.humidity = 85;
+
+      house.tables.forEach(table => this.updateTableData(table, house));
     });
 
-    this.minuteOfTheDay++;
-    if (this.minuteOfTheDay >= 1440) {
-      this.minuteOfTheDay = 0;
-      this.currentDay++;
-      console.log(`Day ${this.currentDay.toFixed(1)}.`);
-    }
-  };
-
+    this.updateTime();
+  }
 
   public async updateTableData(table: PlantTable, house: GreenhouseData) {
-    if (table.plantSize <= 0) {  // plants are dead
-      return table;
+    if (table.plantSize <= 0) return;
+
+    // 💡 LED erhöht Temperatur
+    table.temperature = house.temperature + table.artLight * 0.002;
+
+    // 🚿 Bewässerung
+    if (table.water) {
+      table.soilMoisture = Math.min(100, table.soilMoisture + 5);
+      if (table.fertilizer) table.soilFertility = Math.min(120, table.soilFertility + 20);
+    } else {
+      // Austrocknung abhängig von LF
+      if (house.humidity < 80) {
+        const diff = table.soilMoisture - house.humidity;
+        table.soilMoisture -= diff / 600; // pro Minute
+      }
     }
 
+    // Düngerabbau
+    if (this.minuteOfTheDay % 10 === 0 && table.soilFertility > 0) {
+      table.soilFertility -= 1;
+    }
 
-    // TEMPERATURE EFFECT
-    const temperature: number = table.temperature;
-
-    // bei 60 Grad sterben die Pflanzen sofort ab
-    if (temperature > 60) {
+    // Überdüngung
+    if (table.soilFertility > 100) {
       table.plantSize = 0;
-      return table;
+      return;
     }
 
-    // bei unter 5 Grad oder über 40 Grad wächst die Pflanze nicht
-    if (temperature < 5 || temperature > 40) {
-      return table;
+    // ❌ Pflanzen sterben bei Hitze
+    if (table.temperature > 60) {
+      table.plantSize = 0;
+      return;
     }
 
-    // bei optimalen Bedingungen wächst die Pflanze schneller
-    const growthRate: number = 0.01;
-    table.plantSize += growthRate;
+    // Kein Wachstum bei falscher Temperatur
+    if (table.temperature < 5 || table.temperature > 40) return;
 
-    // Maximalgröße der Pflanze ist 100
-    if (table.plantSize > 100) {
-      table.plantSize = 100;
-    }
+    // 🌱 Wachstum
+    let growth = 0.01;
+    if (table.soilMoisture >= 50 && table.soilMoisture <= 80) growth += 0.005;
+    if (table.soilFertility >= 50) growth += 0.003;
+    if (table.artLight > 500) growth += 0.005;
 
-    // FEUCHTIGKEIT EFFECT
-    const soilMoisture: number = table.soilMoisture;
+    table.plantSize = Math.min(200, table.plantSize + growth);
 
-    // bei bodenfeuchtigkeit unter 50% oder über 80% wächst die Pflanze
-    if(soilMoisture < 50 || soilMoisture > 80) {
-      return table;
-    }
+    // Transportbedingungen
+    table.readyForTransport = table.plantSize >= 30 && table.soilMoisture <= 50;
 
-    table.plantSize += 0.001;
-    if (this.logging) {
-      console.log(`Table ${table.position} plant size: ${table.plantSize.toFixed(3)}`);
+    // Nachpflanzung
+    if (table.plantSize <= 5) {
+      table.plantSize = 2;
+      table.soilMoisture = 70;
+      table.soilFertility = 50;
     }
   }
 
-  public updateTime() {
-    // Update Simulationtime
+  private updateTime() {
     this.minuteOfTheDay++;
     if (this.minuteOfTheDay >= 1440) {
       this.minuteOfTheDay = 0;
       this.currentDay++;
+      console.log(`📅 Simulation Day ${this.currentDay}`);
     }
   }
-
-
 }

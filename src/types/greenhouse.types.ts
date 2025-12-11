@@ -35,18 +35,19 @@ export interface PlantTableStorage {
 }
 
 
-// topic names as shortcuts behind 
+// topic names as shortcuts behind
 export interface PlantTable {
   id: number;
   position: string;        // A1, A2, B1, etc.
   plantSize: number;
-  temperature: number;    // °C 
+  temperature: number;    // °C
   soilMoisture: number;    // %
   soilFertility: number; // %
   artLight: number;
   water: boolean;
   fertilizer: boolean;
   plantedDate: number;  // day in the year
+  readyForTransport: boolean;
 }
 
 export interface GreenhouseData {

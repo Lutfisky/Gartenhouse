@@ -43,7 +43,7 @@ export class ApiRoutes {
       try {
         const id = parseInt(req.params.id);
         const greenhouse = this.greenhouseManager.getGreenhouse(id);
-        
+
         if (!greenhouse) {
           return res.status(404).json({
             success: false,
@@ -74,9 +74,9 @@ export class ApiRoutes {
       try {
         const greenhouseId = parseInt(req.params.greenhouseId);
         const tableId = parseInt(req.params.tableId);
-        
+
         const table = this.greenhouseManager.getTable(greenhouseId, tableId);
-        
+
         if (!table) {
           return res.status(404).json({
             success: false,
@@ -115,6 +115,61 @@ export class ApiRoutes {
         timestamp: new Date().toISOString()
       });
     });
+
+		// POST /api/actuators - Steuerung von Aktoren
+		this.router.post('/actuators', (req: Request, res: Response) => {
+			try {
+				const { greenhouseId, tableId, actuator, value } = req.body;
+				const gh = this.greenhouseManager.getGreenhouse(Number(greenhouseId));
+
+				if (!gh) {
+					return res.status(404).json({
+						success: false,
+						data: null,
+						timestamp: new Date().toISOString(),
+						error: 'Greenhouse not found'
+					});
+				}
+
+				if (tableId) {
+					const table = this.greenhouseManager.getTable(Number(greenhouseId), Number(tableId));
+					if (!table) {
+						return res.status(404).json({
+							success: false,
+							data: null,
+							timestamp: new Date().toISOString(),
+							error: 'Table not found'
+						});
+					}
+					switch (actuator) {
+						case 'led': table.artLight = value; break;
+						case 'wpump': table.water = Boolean(value); break;
+						case 'fertil': table.fertilizer = Boolean(value); break;
+					}
+				} else {
+					switch (actuator) {
+						case 'fan': gh.fan = Boolean(value); break;
+						case 'shading': gh.shading = value; break;
+					}
+				}
+
+				const response: ApiResponse<null> = {
+					success: true,
+					data: null,
+					timestamp: new Date().toISOString()
+				};
+				res.json(response);
+
+			} catch (error) {
+				res.status(500).json({
+					success: false,
+					data: null,
+					timestamp: new Date().toISOString(),
+					error: 'Failed to set actuator'
+				});
+			}
+		});
+
   }
 
   public getRouter(): Router {

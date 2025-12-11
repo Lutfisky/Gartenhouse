@@ -1,4 +1,3 @@
-
 // ===========================
 // src/server.ts
 // ===========================
@@ -21,14 +20,14 @@ class GreenhouseServer {
   constructor() {
     this.port = parseInt(process.env.PORT || '3000');
     this.wsPort = parseInt(process.env.WS_PORT || '3001');
-    
+
     this.app = express();
-    // wenn wir JSON benutzen wollen:
     this.app.use(express.json());
 
+    // Manager initialisieren
     this.greenhouseManager = new GreenhouseManager();
     this.greenhouseManager.initializeManager();
-    
+
     this.setupMiddleware();
     this.setupRoutes();
     this.setupWebSocket();
@@ -47,17 +46,18 @@ class GreenhouseServer {
     // API routes
     const apiRoutes = new ApiRoutes(this.greenhouseManager);
     this.app.use('/api', apiRoutes.getRouter());
-    
+
     // Root endpoint
     this.app.get('/', (req, res) => {
       res.json({
-        message: 'Greenhouse Simulation Server',
+        message: '🌱 Greenhouse Simulation Server',
         version: '1.0.0',
         endpoints: {
           greenhouses: '/api/greenhouses',
           specific_greenhouse: '/api/greenhouses/:id/sensors',
           specific_table: '/api/tables/:greenhouseId/:tableId',
           health: '/api/health',
+          actuators: '/api/actuators',
           websocket: `ws://localhost:${this.wsPort}`
         },
         timestamp: new Date().toISOString()
@@ -79,7 +79,7 @@ class GreenhouseServer {
         error: 'Endpoint not found'
       });
     });
-    
+
     // Global error handler
     this.app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
       console.error('❌ Unhandled error:', err);
@@ -104,7 +104,8 @@ class GreenhouseServer {
       console.log(`   GET  /api/greenhouses/:id/sensors`);
       console.log(`   GET  /api/tables/:greenhouseId/:tableId`);
       console.log(`   GET  /api/health`);
-      console.log('🔄 Simulation running every 30 seconds');
+      console.log(`   POST /api/actuators`);
+      console.log('🔄 Simulation running every 0.1s (entspricht 1 Minute)');
       console.log('🚀 ==========================================');
     });
 

@@ -1,4 +1,3 @@
-
 // ===========================
 // src/services/WebSocketService.ts
 // ===========================
@@ -23,21 +22,40 @@ export class WebSocketService {
   private setupWebSocket(): void {
     this.wss.on('connection', (ws: WebSocket) => {
       console.log('🔌 New WebSocket connection established');
-      
-      // Send current data immediately
       this.sendDataToClient(ws);
-      
+
       ws.on('message', (message: string) => {
         try {
           const data = JSON.parse(message);
           console.log('📨 Received message:', data);
-          
-          // Handle different message types
+
+          if (data.type === 'set_actuator') {
+            const gh = this.greenhouseManager.getGreenhouse(Number(data.greenhouseId));
+            if (!gh) return;
+
+            if (data.tableId) {
+              const table = this.greenhouseManager.getTable(Number(data.greenhouseId), Number(data.tableId));
+              if (!table) return;
+
+              switch (data.actuator) {
+                case 'led': table.artLight = data.value; break;
+                case 'wpump': table.water = Boolean(data.value); break;
+                case 'fertil': table.fertilizer = Boolean(data.value); break;
+              }
+            } else {
+              switch (data.actuator) {
+                case 'fan': gh.fan = Boolean(data.value); break;
+                case 'shading': gh.shading = data.value; break;
+              }
+            }
+
+            this.broadcast();
+          }
+
           if (data.type === 'subscribe') {
-            // Client wants to subscribe to specific greenhouse
             ws.send(JSON.stringify({
               type: 'subscription_confirmed',
-              greenhouse_id: data.greenhouse_id,
+              greenhouse_id: data.greenhouseId,
               timestamp: new Date().toISOString()
             }));
           }
@@ -45,24 +63,23 @@ export class WebSocketService {
           console.error('❌ Error parsing WebSocket message:', error);
         }
       });
-      
+
       ws.on('close', () => {
         console.log('🔌 WebSocket connection closed');
       });
-      
+
       ws.on('error', (error) => {
         console.error('❌ WebSocket error:', error);
       });
     });
-    
+
     console.log(`🌐 WebSocket server listening on port ${this.port}`);
   }
 
   private startBroadcast(): void {
-    // Broadcast updates every 30 seconds
     this.broadcastInterval = setInterval(() => {
-      this.broadcastToAllClients();
-    }, 30000);
+      this.broadcast();
+    }, 30000); // alle 30 Sekunden
   }
 
   private sendDataToClient(ws: WebSocket): void {
@@ -76,23 +93,21 @@ export class WebSocketService {
     }
   }
 
-  private broadcastToAllClients(): void {
-    const data = {
+  private broadcast(): void {
+    const payload = JSON.stringify({
       type: 'sensor_update',
       data: this.greenhouseManager.getAllGreenhouses(),
       timestamp: new Date().toISOString()
-    };
-    
-    const message = JSON.stringify(data);
+    });
+
     let clientCount = 0;
-    
     this.wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
-        client.send(message);
+        client.send(payload);
         clientCount++;
       }
     });
-    
+
     if (clientCount > 0) {
       console.log(`📡 Broadcasted sensor data to ${clientCount} clients`);
     }
