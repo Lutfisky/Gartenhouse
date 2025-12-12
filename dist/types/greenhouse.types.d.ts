@@ -26,6 +26,7 @@ export interface PlantTable {
     water: boolean;
     fertilizer: boolean;
     plantedDate: number;
+    readyForTransport: boolean;
 }
 export interface GreenhouseData {
     id: number;

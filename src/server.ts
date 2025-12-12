@@ -43,7 +43,6 @@ class GreenhouseServer {
   }
 
   private setupRoutes(): void {
-    // API routes
     const apiRoutes = new ApiRoutes(this.greenhouseManager);
     this.app.use('/api', apiRoutes.getRouter());
 
@@ -94,7 +93,7 @@ class GreenhouseServer {
 
   public start(): void {
     this.app.listen(this.port, () => {
-      console.log('🚀 ==========================================');
+      console.log('\n🚀 ==========================================');
       console.log('🌱 GREENHOUSE SIMULATION SERVER STARTED');
       console.log('🚀 ==========================================');
       console.log(`🌐 HTTP Server running on: http://localhost:${this.port}`);
@@ -106,7 +105,7 @@ class GreenhouseServer {
       console.log(`   GET  /api/health`);
       console.log(`   POST /api/actuators`);
       console.log('🔄 Simulation running every 0.1s (entspricht 1 Minute)');
-      console.log('🚀 ==========================================');
+      console.log('🚀 ==========================================\n');
     });
 
     // Graceful shutdown

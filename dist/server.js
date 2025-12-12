@@ -18,8 +18,8 @@ class GreenhouseServer {
         this.port = parseInt(process.env.PORT || '3000');
         this.wsPort = parseInt(process.env.WS_PORT || '3001');
         this.app = (0, express_1.default)();
-        // wenn wir JSON benutzen wollen:
         this.app.use(express_1.default.json());
+        // Manager initialisieren
         this.greenhouseManager = new GreenhouseManager_1.GreenhouseManager();
         this.greenhouseManager.initializeManager();
         this.setupMiddleware();
@@ -35,19 +35,19 @@ class GreenhouseServer {
         this.app.use(express_1.default.urlencoded({ extended: true }));
     }
     setupRoutes() {
-        // API routes
         const apiRoutes = new api_routes_1.ApiRoutes(this.greenhouseManager);
         this.app.use('/api', apiRoutes.getRouter());
         // Root endpoint
         this.app.get('/', (req, res) => {
             res.json({
-                message: 'Greenhouse Simulation Server',
+                message: '🌱 Greenhouse Simulation Server',
                 version: '1.0.0',
                 endpoints: {
                     greenhouses: '/api/greenhouses',
                     specific_greenhouse: '/api/greenhouses/:id/sensors',
                     specific_table: '/api/tables/:greenhouseId/:tableId',
                     health: '/api/health',
+                    actuators: '/api/actuators',
                     websocket: `ws://localhost:${this.wsPort}`
                 },
                 timestamp: new Date().toISOString()
@@ -80,7 +80,7 @@ class GreenhouseServer {
     }
     start() {
         this.app.listen(this.port, () => {
-            console.log('🚀 ==========================================');
+            console.log('\n🚀 ==========================================');
             console.log('🌱 GREENHOUSE SIMULATION SERVER STARTED');
             console.log('🚀 ==========================================');
             console.log(`🌐 HTTP Server running on: http://localhost:${this.port}`);
@@ -90,8 +90,9 @@ class GreenhouseServer {
             console.log(`   GET  /api/greenhouses/:id/sensors`);
             console.log(`   GET  /api/tables/:greenhouseId/:tableId`);
             console.log(`   GET  /api/health`);
-            console.log('🔄 Simulation running every 30 seconds');
-            console.log('🚀 ==========================================');
+            console.log(`   POST /api/actuators`);
+            console.log('🔄 Simulation running every 0.1s (entspricht 1 Minute)');
+            console.log('🚀 ==========================================\n');
         });
         // Graceful shutdown
         process.on('SIGINT', () => {

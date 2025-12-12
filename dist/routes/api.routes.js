@@ -104,6 +104,67 @@ class ApiRoutes {
                 timestamp: new Date().toISOString()
             });
         });
+        // POST /api/actuators - Steuerung von Aktoren
+        this.router.post('/actuators', (req, res) => {
+            try {
+                const { greenhouseId, tableId, actuator, value } = req.body;
+                const gh = this.greenhouseManager.getGreenhouse(Number(greenhouseId));
+                if (!gh) {
+                    return res.status(404).json({
+                        success: false,
+                        data: null,
+                        timestamp: new Date().toISOString(),
+                        error: 'Greenhouse not found'
+                    });
+                }
+                if (tableId) {
+                    const table = this.greenhouseManager.getTable(Number(greenhouseId), Number(tableId));
+                    if (!table) {
+                        return res.status(404).json({
+                            success: false,
+                            data: null,
+                            timestamp: new Date().toISOString(),
+                            error: 'Table not found'
+                        });
+                    }
+                    switch (actuator) {
+                        case 'led':
+                            table.artLight = value;
+                            break;
+                        case 'wpump':
+                            table.water = Boolean(value);
+                            break;
+                        case 'fertil':
+                            table.fertilizer = Boolean(value);
+                            break;
+                    }
+                }
+                else {
+                    switch (actuator) {
+                        case 'fan':
+                            gh.fan = Boolean(value);
+                            break;
+                        case 'shading':
+                            gh.shading = value;
+                            break;
+                    }
+                }
+                const response = {
+                    success: true,
+                    data: null,
+                    timestamp: new Date().toISOString()
+                };
+                res.json(response);
+            }
+            catch (error) {
+                res.status(500).json({
+                    success: false,
+                    data: null,
+                    timestamp: new Date().toISOString(),
+                    error: 'Failed to set actuator'
+                });
+            }
+        });
     }
     getRouter() {
         return this.router;

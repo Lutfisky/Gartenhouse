@@ -8,7 +8,7 @@ export declare class WebSocketService {
     private setupWebSocket;
     private startBroadcast;
     private sendDataToClient;
-    private broadcastToAllClients;
+    private broadcast;
     stop(): void;
 }
 //# sourceMappingURL=WebSocketService.d.ts.map
